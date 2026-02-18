@@ -1,4 +1,4 @@
-"""
+```
 README.md
 
 FRANZ - Full-Fidelity MITM Firewall Panel (Windows 11, Python 3.13)
@@ -276,4 +276,4 @@ Agent stuck:
   - Panel is the single chokepoint for VLM traffic
   - SST must be preserved for stable self-adapting story behavior
   - Streaming is UI-only and must not change main.py expectations
-"""
+```
