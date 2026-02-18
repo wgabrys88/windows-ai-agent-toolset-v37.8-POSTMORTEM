@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>franz panel</title>
+<style>
+html,body{height:100%;margin:0;background:#0b0f14;color:#d7dde8;font-family:ui-sans-serif,system-ui,Segoe UI,Arial}
+*{box-sizing:border-box}
+a{color:#7aa2f7}
+button,input,textarea,select{font:inherit}
+.topbar{display:flex;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid #1c2330;background:#0d131b}
+.btn{border:1px solid #2a3447;background:#111a25;color:#d7dde8;padding:6px 10px;border-radius:8px;cursor:pointer}
+.btn:hover{background:#162235}
+.btn.primary{border-color:#3a67d6;background:#17305a}
+.btn.danger{border-color:#a04646;background:#2b1414}
+.chk{display:flex;gap:8px;align-items:center;padding:0 6px}
+.spacer{flex:1}
+.small{font-size:12px;color:#9fb0c7}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:999px;border:1px solid #2a3447;background:#0f1621;font-size:12px}
+.badge.ok{border-color:#2f6f45;background:#102214;color:#b7f5cb}
+.badge.bad{border-color:#8a3b3b;background:#2b1414;color:#ffb3b3}
+.badge.neu{border-color:#2a3447;background:#0f1621;color:#9fb0c7}
+.wrap{height:calc(100% - 47px);display:flex}
+.leftcol{width:280px;border-right:1px solid #1c2330;background:#0d131b;display:flex;flex-direction:column}
+.rightcol{flex:1;display:flex;flex-direction:column;min-width:0}
+.listhead{padding:10px;border-bottom:1px solid #1c2330;display:flex;gap:8px;align-items:center}
+.list{flex:1;overflow:auto}
+.row{padding:8px 10px;border-bottom:1px solid #141b26;cursor:pointer}
+.row:hover{background:#101826}
+.row.sel{background:#162235}
+.row .t{font-size:12px;color:#9fb0c7}
+.row .id{font-size:12px;color:#d7dde8}
+.row .k{font-size:11px;color:#7aa2f7}
+.panel{flex:1;position:relative;min-height:0}
+.quad{position:absolute;overflow:hidden;border:1px solid #141b26;background:#0b0f14}
+.quad .head{display:flex;gap:8px;align-items:center;padding:6px 8px;border-bottom:1px solid #141b26;background:#0d131b}
+.quad .body{height:calc(100% - 33px);overflow:auto}
+.quad textarea{width:100%;height:100%;border:0;background:#0b0f14;color:#d7dde8;padding:10px;resize:none;outline:none;white-space:pre;overflow:auto;font-family:ui-monospace,Consolas,Menlo,monospace;font-size:12px;line-height:1.35}
+.quad pre{margin:0;padding:10px;white-space:pre-wrap;font-family:ui-monospace,Consolas,Menlo,monospace;font-size:12px;line-height:1.35}
+.splitdot{position:absolute;width:14px;height:14px;border-radius:50%;background:#7aa2f7;border:2px solid #0b0f14;cursor:move;z-index:50;box-shadow:0 0 0 2px rgba(122,162,247,0.25)}
+.hline{position:absolute;height:2px;background:#7aa2f7;opacity:0.35;z-index:40}
+.vline{position:absolute;width:2px;background:#7aa2f7;opacity:0.35;z-index:40}
+.imgwrap{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#070b10}
+.imgwrap img{max-width:100%;max-height:100%;display:block}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:100}
+.modal{width:min(1100px,95vw);height:min(750px,92vh);background:#0d131b;border:1px solid #243049;border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.modal .mh{padding:10px 12px;border-bottom:1px solid #1c2330;display:flex;align-items:center;gap:8px}
+.modal .mb{flex:1;display:flex;min-height:0}
+.modal .ml{width:340px;border-right:1px solid #1c2330;overflow:auto;padding:10px}
+.modal .mr{flex:1;min-width:0;display:flex;flex-direction:column}
+.modal .mr .edit{flex:1;min-height:0}
+.modal .mr textarea{width:100%;height:100%;border:0;background:#0b0f14;color:#d7dde8;padding:10px;resize:none;outline:none;white-space:pre;overflow:auto;font-family:ui-monospace,Consolas,Menlo,monospace;font-size:12px;line-height:1.35}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.field label{font-size:12px;color:#9fb0c7}
+.field input,.field select{padding:8px 10px;border-radius:8px;border:1px solid #2a3447;background:#0b0f14;color:#d7dde8}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+hr{border:0;border-top:1px solid #1c2330;margin:10px 0}
+.canvaswrap{position:relative;flex:1;min-height:0;background:#070b10}
+.canvaswrap img{width:100%;height:100%;object-fit:contain;display:block}
+.selrect{position:absolute;border:2px solid #7aa2f7;background:rgba(122,162,247,0.15);pointer-events:none}
+.smallrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button class="btn" id="btnRefresh">refresh</button>
+  <button class="btn" id="btnPause">pause</button>
+  <button class="btn" id="btnResume">resume</button>
+  <button class="btn" id="btnTools">tools</button>
+  <button class="btn" id="btnCrop">select region</button>
+  <button class="btn" id="btnCfg">config</button>
+  <button class="btn" id="btnQueue">queue</button>
+  <span class="spacer"></span>
+  <span class="badge neu" id="healthBadge">health</span>
+  <span class="small" id="healthText"></span>
+</div>
+
+<div class="wrap">
+  <div class="leftcol">
+    <div class="listhead">
+      <span class="small">turns</span>
+      <span class="spacer"></span>
+      <button class="btn" id="btnClear">clear</button>
+    </div>
+    <div class="list" id="turnList"></div>
+  </div>
+
+  <div class="rightcol">
+    <div class="panel" id="panel">
+      <div class="hline" id="hline"></div>
+      <div class="vline" id="vline"></div>
+      <div class="splitdot" id="splitdot"></div>
+
+      <div class="quad" id="q1">
+        <div class="head">
+          <span class="small">VLM INPUT (FULL)</span>
+          <span class="spacer"></span>
+          <span class="badge neu" id="sstBadge">sst</span>
+        </div>
+        <div class="body"><textarea id="reqRaw" spellcheck="false"></textarea></div>
+      </div>
+
+      <div class="quad" id="q2">
+        <div class="head">
+          <span class="small">VLM OUTPUT</span>
+          <span class="spacer"></span>
+          <span class="small" id="streamStat"></span>
+        </div>
+        <div class="body"><textarea id="respRaw" spellcheck="false"></textarea></div>
+      </div>
+
+      <div class="quad" id="q3">
+        <div class="head">
+          <span class="small">TURN INFO</span>
+          <span class="spacer"></span>
+          <span class="small" id="turnMeta"></span>
+        </div>
+        <div class="body"><pre id="turnInfo"></pre></div>
+      </div>
+
+      <div class="quad" id="q4">
+        <div class="head">
+          <span class="small">SCREENSHOT</span>
+          <span class="spacer"></span>
+          <span class="small" id="imgMeta"></span>
+        </div>
+        <div class="body"><div class="imgwrap"><img id="shot" alt=""></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="ovTools">
+  <div class="modal">
+    <div class="mh">
+      <span class="small">allowed tools</span>
+      <span class="spacer"></span>
+      <button class="btn" id="btnToolsClose">close</button>
+    </div>
+    <div class="mb">
+      <div class="ml">
+        <div class="small">toggle tools allowed for execute.py</div>
+        <hr>
+        <div id="toolsList"></div>
+        <hr>
+        <button class="btn primary" id="btnToolsApply">apply</button>
+      </div>
+      <div class="mr">
+        <div class="mh"><span class="small">raw allowed_tools.json</span></div>
+        <div class="edit"><textarea id="toolsRaw" spellcheck="false"></textarea></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="ovCfg">
+  <div class="modal">
+    <div class="mh">
+      <span class="small">config</span>
+      <span class="spacer"></span>
+      <button class="btn" id="btnCfgClose">close</button>
+    </div>
+    <div class="mb">
+      <div class="ml">
+        <div class="small">edit config.json (panel-managed)</div>
+        <hr>
+        <div class="grid2">
+          <div class="field"><label>model</label><input id="cfgModel"></div>
+          <div class="field"><label>upstream_url</label><input id="cfgUpstream"></div>
+        </div>
+        <div class="grid3">
+          <div class="field"><label>temperature</label><input id="cfgTemp"></div>
+          <div class="field"><label>top_p</label><input id="cfgTopP"></div>
+          <div class="field"><label>max_tokens</label><input id="cfgMaxTok"></div>
+        </div>
+        <div class="grid3">
+          <div class="field"><label>width</label><input id="cfgW"></div>
+          <div class="field"><label>height</label><input id="cfgH"></div>
+          <div class="field"><label>capture_delay</label><input id="cfgCap"></div>
+        </div>
+        <div class="grid3">
+          <div class="field"><label>cache_prompt</label><input id="cfgCache"></div>
+          <div class="field"><label>physical_execution</label><input id="cfgPhys"></div>
+          <div class="field"><label>loop_delay</label><input id="cfgLoop"></div>
+        </div>
+        <div class="grid3">
+          <div class="field"><label>firewall_enabled</label><input id="cfgFw"></div>
+          <div class="field"><label>auto_approve</label><input id="cfgAuto"></div>
+          <div class="field"><label>stream_to_panel</label><input id="cfgStream"></div>
+        </div>
+        <div class="smallrow">
+          <button class="btn primary" id="btnCfgApply">apply</button>
+          <button class="btn" id="btnCfgReload">reload</button>
+        </div>
+      </div>
+      <div class="mr">
+        <div class="mh"><span class="small">raw config.json</span></div>
+        <div class="edit"><textarea id="cfgRaw" spellcheck="false"></textarea></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="ovCrop">
+  <div class="modal">
+    <div class="mh">
+      <span class="small">select region (crop.json)</span>
+      <span class="spacer"></span>
+      <button class="btn" id="btnCropClose">close</button>
+    </div>
+    <div class="mb">
+      <div class="ml">
+        <div class="small">drag a rectangle on the preview, then apply</div>
+        <hr>
+        <div class="field"><label>crop raw json</label><textarea id="cropRaw" spellcheck="false" style="height:170px"></textarea></div>
+        <div class="smallrow">
+          <button class="btn primary" id="btnCropApply">apply</button>
+          <button class="btn danger" id="btnCropClear">clear</button>
+          <button class="btn" id="btnCropReload">reload</button>
+        </div>
+      </div>
+      <div class="mr">
+        <div class="mh">
+          <span class="small">live preview</span>
+          <span class="spacer"></span>
+          <span class="small" id="prevMeta"></span>
+        </div>
+        <div class="canvaswrap" id="prevWrap">
+          <img id="prevImg" alt="">
+          <div class="selrect" id="selRect" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="ovQueue">
+  <div class="modal">
+    <div class="mh">
+      <span class="small">pending queue (firewall)</span>
+      <span class="spacer"></span>
+      <button class="btn" id="btnQueueClose">close</button>
+    </div>
+    <div class="mb">
+      <div class="ml">
+        <div class="small">click an item to edit/approve/reject</div>
+        <hr>
+        <div id="pendingList"></div>
+        <hr>
+        <div class="smallrow">
+          <button class="btn" id="btnPendReload">reload</button>
+        </div>
+      </div>
+      <div class="mr">
+        <div class="mh">
+          <span class="small" id="pendTitle">selected</span>
+          <span class="spacer"></span>
+          <button class="btn primary" id="btnPendApprove">approve</button>
+          <button class="btn danger" id="btnPendReject">reject</button>
+        </div>
+        <div class="mb" style="flex:1;min-height:0">
+          <div class="ml" style="width:50%;border-right:1px solid #1c2330">
+            <div class="small">raw request json</div>
+            <div style="height:12px"></div>
+            <textarea id="pendReq" spellcheck="false" style="height:calc(100% - 45px)"></textarea>
+            <div class="smallrow">
+              <button class="btn" id="btnPendEditReq">edit request</button>
+            </div>
+          </div>
+          <div class="mr" style="width:50%">
+            <div class="small">raw response json</div>
+            <div style="height:12px"></div>
+            <textarea id="pendResp" spellcheck="false" style="height:calc(100% - 45px)"></textarea>
+            <div class="smallrow">
+              <button class="btn" id="btnPendEditResp">edit response</button>
+              <button class="btn" id="btnPendInjectResp">inject response</button>
+            </div>
+          </div>
+        </div>
+        <div class="mh">
+          <span class="small">reject message</span>
+          <span class="spacer"></span>
+        </div>
+        <div class="edit" style="height:120px"><textarea id="pendRejectMsg" spellcheck="false"></textarea></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+function $(id){return document.getElementById(id)}
+function jparse(t){try{return JSON.parse(t)}catch(e){return null}}
+function jstr(o){return JSON.stringify(o,null,2)}
+async function jget(url){
+  const r = await fetch(url,{cache:"no-store"});
+  const t = await r.text();
+  const o = jparse(t);
+  if(!o) throw new Error("bad json");
+  return o;
+}
+async function jpost(url,obj){
+  const r = await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(obj)});
+  const t = await r.text();
+  const o = jparse(t);
+  if(!o) throw new Error("bad json");
+  return o;
+}
+
+let turnIndex = [];
+let selectedTurnId = "";
+let pendingIndex = [];
+let selectedPendingId = "";
+
+let splitX = 0.56;
+let splitY = 0.56;
+
+function layout(){
+  const p = $("panel");
+  const w = p.clientWidth;
+  const h = p.clientHeight;
+  const x = Math.max(240, Math.min(w-240, Math.round(w*splitX)));
+  const y = Math.max(160, Math.min(h-160, Math.round(h*splitY)));
+
+  $("vline").style.left = (x-1)+"px";
+  $("vline").style.top = "0px";
+  $("vline").style.height = h+"px";
+
+  $("hline").style.top = (y-1)+"px";
+  $("hline").style.left = "0px";
+  $("hline").style.width = w+"px";
+
+  $("splitdot").style.left = (x-7)+"px";
+  $("splitdot").style.top  = (y-7)+"px";
+
+  const q1 = $("q1"), q2 = $("q2"), q3 = $("q3"), q4 = $("q4");
+  q1.style.left="0px"; q1.style.top="0px"; q1.style.width=x+"px"; q1.style.height=y+"px";
+  q2.style.left=x+"px"; q2.style.top="0px"; q2.style.width=(w-x)+"px"; q2.style.height=y+"px";
+  q3.style.left="0px"; q3.style.top=y+"px"; q3.style.width=x+"px"; q3.style.height=(h-y)+"px";
+  q4.style.left=x+"px"; q4.style.top=y+"px"; q4.style.width=(w-x)+"px"; q4.style.height=(h-y)+"px";
+}
+window.addEventListener("resize", layout);
+
+(function(){
+  const dot = $("splitdot");
+  let dragging=false;
+  dot.addEventListener("mousedown",(ev)=>{
+    dragging=true;
+    ev.preventDefault();
+  });
+  window.addEventListener("mouseup",()=>dragging=false);
+  window.addEventListener("mousemove",(ev)=>{
+    if(!dragging) return;
+    const p = $("panel");
+    const r = p.getBoundingClientRect();
+    const x = ev.clientX - r.left;
+    const y = ev.clientY - r.top;
+    splitX = x / Math.max(1,r.width);
+    splitY = y / Math.max(1,r.height);
+    layout();
+  });
+})();
+
+function badge(el, kind, text){
+  el.classList.remove("ok","bad","neu");
+  el.classList.add(kind);
+  el.textContent = text;
+}
+
+function renderIndex(){
+  const box = $("turnList");
+  box.innerHTML = "";
+  for(const it of turnIndex){
+    const d = document.createElement("div");
+    d.className = "row" + (it.id===selectedTurnId?" sel":"");
+    const kind = it.kind || "turn";
+    d.innerHTML = `<div class="id">${it.id}</div><div class="t">${it.timestamp||""}</div><div class="k">${kind}${it.stage?(":"+it.stage):""}</div>`;
+    d.addEventListener("click",()=>{selectTurn(it.id)});
+    box.appendChild(d);
+  }
+}
+
+async function loadIndex(){
+  const o = await jget("/index");
+  turnIndex = o.index || [];
+  renderIndex();
+}
+
+async function selectTurn(id){
+  selectedTurnId = id;
+  renderIndex();
+  const o = await jget("/turn/"+encodeURIComponent(id));
+  $("reqRaw").value = o.request_raw || "";
+  $("respRaw").value = o.response_raw || "";
+  $("turnInfo").textContent = jstr({
+    id:o.turn_id,
+    timestamp:o.timestamp,
+    path:o.path,
+    latency_ms:o.latency_ms,
+    request:o.request,
+    response:o.response,
+    sst_check:o.sst_check
+  });
+  const sst = o.sst_check || {};
+  if(sst.verified && sst.match) badge($("sstBadge"),"ok","sst ok");
+  else if(sst.verified && !sst.match) badge($("sstBadge"),"bad","sst violation");
+  else badge($("sstBadge"),"neu","sst");
+
+  const imguri = (o.request && o.request.image_data_uri) ? o.request.image_data_uri : "";
+  if(imguri){
+    $("shot").src = imguri;
+    $("imgMeta").textContent = "image attached";
+  } else {
+    $("shot").removeAttribute("src");
+    $("imgMeta").textContent = "no image";
+  }
+  $("streamStat").textContent = "";
+  $("turnMeta").textContent = `status=${(o.response&&o.response.status)||""} ms=${o.latency_ms}`;
+}
+
+async function refreshHealth(){
+  const h = await jget("/health");
+  const txt = `turns=${h.turns} pending=${h.pending} paused=${h.paused} main=${h.main_running}`;
+  $("healthText").textContent = txt;
+  badge($("healthBadge"), h.paused ? "bad" : "ok", h.paused ? "paused" : "running");
+}
+
+$("btnRefresh").addEventListener("click", async()=>{await loadIndex(); await refreshHealth();});
+$("btnClear").addEventListener("click", ()=>{turnIndex=[]; renderIndex();});
+
+$("btnPause").addEventListener("click", async()=>{await jpost("/pause",{}); await refreshHealth();});
+$("btnResume").addEventListener("click", async()=>{await jpost("/unpause",{}); await refreshHealth();});
+
+function show(ov){ov.style.display="flex"}
+function hide(ov){ov.style.display="none"}
+
+$("btnTools").addEventListener("click", async()=>{
+  await loadTools();
+  show($("ovTools"));
+});
+$("btnToolsClose").addEventListener("click", ()=>hide($("ovTools")));
+
+$("btnCfg").addEventListener("click", async()=>{
+  await loadConfig();
+  show($("ovCfg"));
+});
+$("btnCfgClose").addEventListener("click", ()=>hide($("ovCfg")));
+
+$("btnCrop").addEventListener("click", async()=>{
+  await loadCrop();
+  await startPreview();
+  show($("ovCrop"));
+});
+$("btnCropClose").addEventListener("click", ()=>{stopPreview(); hide($("ovCrop"));});
+
+$("btnQueue").addEventListener("click", async()=>{
+  await loadPending();
+  show($("ovQueue"));
+});
+$("btnQueueClose").addEventListener("click", ()=>hide($("ovQueue")));
+
+async function loadTools(){
+  const o = await jget("/allowed_tools");
+  $("toolsRaw").value = jstr(o);
+  const allowed = (o.allowed && Array.isArray(o.allowed)) ? o.allowed : [];
+  const all = ["click","right_click","double_click","drag","write","remember","recall"];
+  const box = $("toolsList");
+  box.innerHTML = "";
+  for(const t of all){
+    const w = document.createElement("div");
+    w.className = "chk";
+    const ck = document.createElement("input");
+    ck.type = "checkbox";
+    ck.checked = allowed.indexOf(t) >= 0;
+    ck.dataset.tool = t;
+    const lb = document.createElement("span");
+    lb.textContent = t;
+    w.appendChild(ck);
+    w.appendChild(lb);
+    box.appendChild(w);
+  }
+}
+$("btnToolsApply").addEventListener("click", async()=>{
+  const raw = $("toolsRaw").value;
+  const obj = jparse(raw);
+  if(obj && obj.allowed && Array.isArray(obj.allowed)){
+    await jpost("/allowed_tools", obj);
+    return;
+  }
+  const cks = $("toolsList").querySelectorAll("input[type=checkbox]");
+  const allowed = [];
+  for(const ck of cks){
+    if(ck.checked) allowed.push(ck.dataset.tool);
+  }
+  await jpost("/allowed_tools", {allowed: allowed});
+  await loadTools();
+});
+
+async function loadConfig(){
+  const c = await jget("/config");
+  $("cfgRaw").value = jstr(c);
+  $("cfgModel").value = c.model ?? "";
+  $("cfgUpstream").value = c.upstream_url ?? "";
+  $("cfgTemp").value = c.temperature ?? "";
+  $("cfgTopP").value = c.top_p ?? "";
+  $("cfgMaxTok").value = c.max_tokens ?? "";
+  $("cfgW").value = c.width ?? "";
+  $("cfgH").value = c.height ?? "";
+  $("cfgCap").value = c.capture_delay ?? "";
+  $("cfgCache").value = c.cache_prompt ?? "";
+  $("cfgPhys").value = c.physical_execution ?? "";
+  $("cfgLoop").value = c.loop_delay ?? "";
+  $("cfgFw").value = c.firewall_enabled ?? "";
+  $("cfgAuto").value = c.auto_approve ?? "";
+  $("cfgStream").value = c.stream_to_panel ?? "";
+}
+$("btnCfgReload").addEventListener("click", async()=>{await loadConfig();});
+$("btnCfgApply").addEventListener("click", async()=>{
+  const raw = $("cfgRaw").value;
+  const obj = jparse(raw);
+  if(obj && typeof obj === "object"){
+    await jpost("/config", obj);
+    await loadConfig();
+    return;
+  }
+  const upd = {
+    model: $("cfgModel").value,
+    upstream_url: $("cfgUpstream").value,
+    temperature: Number($("cfgTemp").value),
+    top_p: Number($("cfgTopP").value),
+    max_tokens: Number($("cfgMaxTok").value),
+    width: Number($("cfgW").value),
+    height: Number($("cfgH").value),
+    capture_delay: Number($("cfgCap").value),
+    cache_prompt: String($("cfgCache").value).trim().toLowerCase() === "true",
+    physical_execution: String($("cfgPhys").value).trim().toLowerCase() === "true",
+    loop_delay: Number($("cfgLoop").value),
+    firewall_enabled: String($("cfgFw").value).trim().toLowerCase() === "true",
+    auto_approve: String($("cfgAuto").value).trim().toLowerCase() === "true",
+    stream_to_panel: String($("cfgStream").value).trim().toLowerCase() === "true"
+  };
+  await jpost("/config", upd);
+  await loadConfig();
+});
+
+let previewTimer = 0;
+let previewNatW = 0;
+let previewNatH = 0;
+let selecting = false;
+let sx=0, sy=0, ex=0, ey=0;
+
+function rectNorm(){
+  const x1 = Math.min(sx,ex), y1=Math.min(sy,ey);
+  const x2 = Math.max(sx,ex), y2=Math.max(sy,ey);
+  return {x1,y1,x2,y2};
+}
+
+function updateSelRect(){
+  const r = rectNorm();
+  const wrap = $("prevWrap").getBoundingClientRect();
+  const img = $("prevImg");
+  const ir = img.getBoundingClientRect();
+
+  const ix = ir.left - wrap.left;
+  const iy = ir.top - wrap.top;
+  const iw = ir.width;
+  const ih = ir.height;
+
+  const rx1 = ix + r.x1*iw;
+  const ry1 = iy + r.y1*ih;
+  const rx2 = ix + r.x2*iw;
+  const ry2 = iy + r.y2*ih;
+
+  const s = $("selRect");
+  s.style.display = "block";
+  s.style.left = rx1+"px";
+  s.style.top = ry1+"px";
+  s.style.width = Math.max(0,rx2-rx1)+"px";
+  s.style.height = Math.max(0,ry2-ry1)+"px";
+}
+
+function imgPosToNorm(ev){
+  const img = $("prevImg");
+  const ir = img.getBoundingClientRect();
+  const x = (ev.clientX - ir.left) / Math.max(1,ir.width);
+  const y = (ev.clientY - ir.top) / Math.max(1,ir.height);
+  return {x:Math.max(0,Math.min(1,x)), y:Math.max(0,Math.min(1,y))};
+}
+
+$("prevWrap").addEventListener("mousedown",(ev)=>{
+  if($("ovCrop").style.display !== "flex") return;
+  const p = imgPosToNorm(ev);
+  selecting=true;
+  sx=p.x; sy=p.y; ex=p.x; ey=p.y;
+  updateSelRect();
+});
+window.addEventListener("mousemove",(ev)=>{
+  if(!selecting) return;
+  const p = imgPosToNorm(ev);
+  ex=p.x; ey=p.y;
+  updateSelRect();
+});
+window.addEventListener("mouseup",()=>{selecting=false;});
+
+async function startPreview(){
+  stopPreview();
+  async function tick(){
+    const o = await jget("/preview");
+    const uri = o.data_uri || "";
+    if(uri){
+      const img = $("prevImg");
+      img.onload = ()=>{
+        previewNatW = img.naturalWidth;
+        previewNatH = img.naturalHeight;
+        $("prevMeta").textContent = `${previewNatW}x${previewNatH}`;
+      };
+      img.src = uri;
+    }
+    previewTimer = window.setTimeout(tick, 1000);
+  }
+  tick();
+}
+function stopPreview(){
+  if(previewTimer){window.clearTimeout(previewTimer); previewTimer=0;}
+}
+
+async function loadCrop(){
+  const c = await jget("/crop");
+  $("cropRaw").value = jstr(c);
+  $("selRect").style.display = "none";
+}
+$("btnCropReload").addEventListener("click", async()=>{await loadCrop();});
+$("btnCropClear").addEventListener("click", async()=>{await jpost("/crop",{}); await loadCrop();});
+$("btnCropApply").addEventListener("click", async()=>{
+  const raw = $("cropRaw").value;
+  const obj = jparse(raw);
+  if(obj && typeof obj === "object" && ("x1" in obj || "x2" in obj)){
+    await jpost("/crop", obj);
+    await loadCrop();
+    return;
+  }
+  const r = rectNorm();
+  const crop = {
+    x1: Math.round(r.x1 * previewNatW),
+    y1: Math.round(r.y1 * previewNatH),
+    x2: Math.round(r.x2 * previewNatW),
+    y2: Math.round(r.y2 * previewNatH)
+  };
+  await jpost("/crop", crop);
+  $("cropRaw").value = jstr(crop);
+});
+
+async function loadPending(){
+  const o = await jget("/pending");
+  pendingIndex = o.pending || [];
+  const box = $("pendingList");
+  box.innerHTML = "";
+  for(const p of pendingIndex){
+    const d = document.createElement("div");
+    d.className = "row" + (p.id===selectedPendingId?" sel":"");
+    d.innerHTML = `<div class="id">${p.id}</div><div class="t">${p.created||""}</div><div class="k">${p.stage||""}</div>`;
+    d.addEventListener("click",()=>{selectPending(p.id);});
+    box.appendChild(d);
+  }
+}
+$("btnPendReload").addEventListener("click", async()=>{await loadPending();});
+async function selectPending(id){
+  selectedPendingId = id;
+  await loadPending();
+  const o = await jget("/pending/"+encodeURIComponent(id));
+  $("pendTitle").textContent = `id=${o.id} stage=${o.stage}`;
+  $("pendReq").value = o.raw_request || "";
+  $("pendResp").value = o.raw_response || "";
+}
+
+$("btnPendApprove").addEventListener("click", async()=>{
+  if(!selectedPendingId) return;
+  await jpost(`/pending/${encodeURIComponent(selectedPendingId)}/approve`, {});
+  await loadPending();
+});
+$("btnPendReject").addEventListener("click", async()=>{
+  if(!selectedPendingId) return;
+  const msg = $("pendRejectMsg").value || "rejected";
+  await jpost(`/pending/${encodeURIComponent(selectedPendingId)}/reject`, {message: msg});
+  await loadPending();
+});
+$("btnPendEditReq").addEventListener("click", async()=>{
+  if(!selectedPendingId) return;
+  await jpost(`/pending/${encodeURIComponent(selectedPendingId)}/edit_request`, {raw_request: $("pendReq").value});
+  await loadPending();
+});
+$("btnPendEditResp").addEventListener("click", async()=>{
+  if(!selectedPendingId) return;
+  await jpost(`/pending/${encodeURIComponent(selectedPendingId)}/edit_response`, {raw_response: $("pendResp").value});
+  await loadPending();
+});
+$("btnPendInjectResp").addEventListener("click", async()=>{
+  if(!selectedPendingId) return;
+  await jpost(`/pending/${encodeURIComponent(selectedPendingId)}/inject_response`, {raw_response: $("pendResp").value});
+  await loadPending();
+});
+
+function startEvents(){
+  const es = new EventSource("/events");
+  es.onmessage = async(ev)=>{
+    const obj = jparse(ev.data);
+    if(!obj) return;
+    if(obj.type === "turn_started"){
+      await loadIndex();
+      await refreshHealth();
+      return;
+    }
+    if(obj.type === "turn_completed"){
+      await loadIndex();
+      await refreshHealth();
+      if(!selectedTurnId && turnIndex.length) selectTurn(turnIndex[0].id);
+      return;
+    }
+    if(obj.type === "pending_created" || obj.type === "pending_updated"){
+      if($("ovQueue").style.display === "flex"){
+        await loadPending();
+        if(selectedPendingId) await selectPending(selectedPendingId);
+      }
+      await refreshHealth();
+      return;
+    }
+    if(obj.type === "stream_delta"){
+      if(selectedPendingId){
+        const cur = await jget("/pending/"+encodeURIComponent(selectedPendingId));
+        $("pendResp").value = cur.raw_response || $("pendResp").value;
+      }
+      if(selectedTurnId){
+        const t = await jget("/turn/"+encodeURIComponent(selectedTurnId));
+        $("respRaw").value = t.response_raw || $("respRaw").value;
+      }
+      if(obj.done) $("streamStat").textContent = "stream done";
+      else $("streamStat").textContent = `stream chars=${obj.chars}`;
+      return;
+    }
+  };
+  es.onerror = ()=>{
+    setTimeout(()=>startEvents(), 1000);
+  };
+}
+
+(async function init(){
+  layout();
+  await loadIndex();
+  await refreshHealth();
+  if(turnIndex.length) await selectTurn(turnIndex[0].id);
+  startEvents();
+})();
+</script>
+</body>
+</html>
