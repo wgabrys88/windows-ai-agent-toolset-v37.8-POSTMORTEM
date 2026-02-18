@@ -1,4 +1,4 @@
-"""
+```
 POSTMORTEM.md
 
 FRANZ PANEL POSTMORTEM - What Went Wrong, What Was Fixed, What Exists Now
@@ -246,4 +246,4 @@ MITM gating.
 End result:
   - The panel now behaves like an observability and control plane that matches
     its purpose, and the agent loop can sustain an identity-like story over time.
-"""
+```
